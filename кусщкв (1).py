@@ -19,7 +19,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Инициализация бота
-bot = Bot(token="8762576048:AAE3LPgQ2IueaKw5E9SlDqxuDg4bO4W-QQ8")  # Замените на ваш токен
+bot = Bot(token="8397283414:AAER0owctNVCN_ZwEMPO6iT5C2IjGYmluAw")  # Замените на ваш токен
 dp = Dispatcher()
 
 # Конфигурация платежей
@@ -1001,3 +1001,4 @@ if __name__ == "__main__":
     logging.info("Бот запускается...")
 
     asyncio.run(main())
+
