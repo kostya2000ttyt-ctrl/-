@@ -512,6 +512,66 @@ async def process_currency(callback: types.CallbackQuery, state: FSMContext):
                 seller_id,
                 f"🔔 Вам предложение купить ваш подарок!\n\n"
                 f"Покупатель: @{buyer_username}\n"
+@dp.callback_query(DealCreation.waiting_for_currency, F.data.in_({"currency_stars", "currency_ton"}))
+async def process_currency(callback: types.CallbackQuery, state: FSMContext):
+    currency = callback.data.split("_")[1]  # stars или ton
+    await state.update_data(currency=currency)
+    data = await state.get_data()
+    target_username = data['target_username']
+    gift_link = data['gift_link']
+    price = data['price']
+    buyer_id = callback.from_user.id
+    buyer_username = users[buyer_id]['username']
+
+    deal_token = secrets.token_urlsafe(16)
+    deal_id = len(deals) + 1
+
+    deals[deal_id] = {
+        "id": deal_id,
+        "buyer_id": buyer_id,
+        "buyer_username": buyer_username,
+        "seller_username": target_username,
+        "gift_link": gift_link,
+        "price": price,
+        "currency": currency,
+        "status": "pending_moderator",
+        "token": deal_token,
+        "created_at": datetime.now()
+    }
+
+    bot_username = (await bot.get_me()).username
+    deal_link = f"https://t.me/{bot_username}?start=deal_{deal_token}"
+
+    # === ОТПРАВКА УВЕДОМЛЕНИЙ МОДЕРАТОРАМ И ПРОДАВЦУ ===
+    currency_display = "звёзд" if currency == "stars" else "TON"
+
+    # 1. Отправка модераторам (как и было)
+    for mod_id in moderator_ids:
+        await bot.send_message(
+            mod_id,
+            f"🔔 Новая сделка #{deal_id}\n"
+            f"Покупатель: @{buyer_username}\n"
+            f"Продавец: @{target_username}\n"
+            f"Ссылка на подарок: {gift_link}\n"
+            f"Цена: {price} {currency_display}\n\n"
+            f"📎 Ссылка для продавца:\n{deal_link}"
+        )
+
+    # 2. Отправка уведомления напрямую продавцу (НОВОЕ)
+    try:
+        # Пытаемся найти ID продавца по его username в базе users
+        seller_id = None
+        for uid, udata in users.items():
+            if udata.get('username') == target_username:
+                seller_id = uid
+                break
+
+        if seller_id:
+            # Если продавец уже есть в базе (запускал бота) - отправляем ему лично
+            await bot.send_message(
+                seller_id,
+                f"🔔 Вам предложение купить ваш подарок!\n\n"
+                f"Покупатель: @{buyer_username}\n"
                 f"Подарок: {gift_link}\n"
                 f"Цена: {price} {currency_display}\n\n"
                 f"📎 Ваша персональная ссылка для принятия сделки:\n{deal_link}\n\n"
