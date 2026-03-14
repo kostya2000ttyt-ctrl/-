@@ -422,11 +422,11 @@ async def process_currency(callback: types.CallbackQuery, state: FSMContext):
     deal_link = f"https://t.me/{bot_username}?start=deal_{deal_token}"
 
     # === ОТПРАВКА УВЕДОМЛЕНИЙ МОДЕРАТОРАМ И ПРОДАВЦУ ===
-currency_display = "звёзд" if currency == "stars" else "TON"  # <-- 4 пробела
+    currency_display = "звёзд" if currency == "stars" else "TON"  # <-- 4 пробела
 
 # 1. Отправка модераторам (как и было)
-for mod_id in moderator_ids:  # <-- 4 пробела
-    await bot.send_message(  # <-- 8 пробелов
+    for mod_id in moderator_ids:  # <-- 4 пробела
+        await bot.send_message(  # <-- 8 пробелов
         mod_id,
         f"🔔 Новая сделка #{deal_id}\n"
         f"Покупатель: @{buyer_username}\n"
