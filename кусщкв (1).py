@@ -435,7 +435,7 @@ async def process_currency(callback: types.CallbackQuery, state: FSMContext):
         )
 
     await callback.message.answer(
-        "✅ Сделка создана. Модератор скоро свяжется с продавцом.\n"
+        f"✅ Сделка создана.📎 Скопируйте и отправьте продавцу эту ссылку:\n {deal_link}"
         "Статус сделки можно отслеживать в разделе «Мои сделки»."
     )
     await state.clear()
