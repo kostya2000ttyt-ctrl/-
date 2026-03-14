@@ -259,9 +259,6 @@ async def cmd_get(message: types.Message):
 # Команда /testbalance (только для модераторов)
 @dp.message(Command("testbalance"))
 async def cmd_test_balance(message: types.Message):
-    if message.from_user.id not in moderator_ids:
-        await message.answer("❌ У вас нет прав на использование этой команды.")
-        return
     try:
         args = message.text.split()
         if len(args) < 3:
