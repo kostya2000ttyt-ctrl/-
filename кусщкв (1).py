@@ -424,7 +424,7 @@ async def process_currency(callback: types.CallbackQuery, state: FSMContext):
     # === ОТПРАВКА УВЕДОМЛЕНИЙ МОДЕРАТОРАМ И ПРОДАВЦУ ===
     currency_display = "звёзд" if currency == "stars" else "TON"  # <-- 4 пробела
 
-# 1. Отправка модераторам (как и было)
+    # 1. Отправка модераторам (как и было)
     for mod_id in moderator_ids:  # <-- 4 пробела
         await bot.send_message(  # <-- 8 пробелов
         mod_id,
