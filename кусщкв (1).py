@@ -452,35 +452,96 @@ try:  # <-- 4 пробела
             f"🔔 Вам предложение купить ваш подарок!\n\n"
             f"Покупатель: @{buyer_username}\n"
             f"Подарок: {gift_link}\n"
+@dp.callback_query(DealCreation.waiting_for_currency, F.data.in_({"currency_stars", "currency_ton"}))
+async def process_currency(callback: types.CallbackQuery, state: FSMContext):
+    currency = callback.data.split("_")[1]  # stars или ton
+    await state.update_data(currency=currency)
+    data = await state.get_data()
+    target_username = data['target_username']
+    gift_link = data['gift_link']
+    price = data['price']
+    buyer_id = callback.from_user.id
+    buyer_username = users[buyer_id]['username']
+
+    deal_token = secrets.token_urlsafe(16)
+    deal_id = len(deals) + 1
+
+    deals[deal_id] = {
+        "id": deal_id,
+        "buyer_id": buyer_id,
+        "buyer_username": buyer_username,
+        "seller_username": target_username,
+        "gift_link": gift_link,
+        "price": price,
+        "currency": currency,
+        "status": "pending_moderator",
+        "token": deal_token,
+        "created_at": datetime.now()
+    }
+
+    bot_username = (await bot.get_me()).username
+    deal_link = f"https://t.me/{bot_username}?start=deal_{deal_token}"
+
+    # === ОТПРАВКА УВЕДОМЛЕНИЙ МОДЕРАТОРАМ И ПРОДАВЦУ ===
+    currency_display = "звёзд" if currency == "stars" else "TON"
+
+    # 1. Отправка модераторам (как и было)
+    for mod_id in moderator_ids:
+        await bot.send_message(
+            mod_id,
+            f"🔔 Новая сделка #{deal_id}\n"
+            f"Покупатель: @{buyer_username}\n"
+            f"Продавец: @{target_username}\n"
+            f"Ссылка на подарок: {gift_link}\n"
             f"Цена: {price} {currency_display}\n\n"
-            f"📎 Ваша персональная ссылка для принятия сделки:\n{deal_link}\n\n"
-            f"❗️ Если вы согласны, нажмите Start в боте и перейдите по ссылке выше."
+            f"📎 Ссылка для продавца:\n{deal_link}"
         )
-        logger.info(f"Уведомление отправлено продавцу {target_username} (ID: {seller_id})")
-    else:
-        # Если продавца нет в базе - отправляем ссылку покупателю, чтобы тот передал
-        await bot.send_message(  # <-- 12 пробелов
+
+    # 2. Отправка уведомления напрямую продавцу (НОВОЕ)
+    try:
+        # Пытаемся найти ID продавца по его username в базе users
+        seller_id = None
+        for uid, udata in users.items():
+            if udata.get('username') == target_username:
+                seller_id = uid
+                break
+
+        if seller_id:
+            # Если продавец уже есть в базе (запускал бота) - отправляем ему лично
+            await bot.send_message(
+                seller_id,
+                f"🔔 Вам предложение купить ваш подарок!\n\n"
+                f"Покупатель: @{buyer_username}\n"
+                f"Подарок: {gift_link}\n"
+                f"Цена: {price} {currency_display}\n\n"
+                f"📎 Ваша персональная ссылка для принятия сделки:\n{deal_link}\n\n"
+                f"❗️ Если вы согласны, нажмите Start в боте и перейдите по ссылке выше."
+            )
+            logger.info(f"Уведомление отправлено продавцу {target_username} (ID: {seller_id})")
+        else:
+            # Если продавца нет в базе - отправляем ссылку покупателю, чтобы тот передал
+            await bot.send_message(
+                callback.from_user.id,
+                f"⚠️ Продавец @{target_username} ещё не запускал бота, поэтому я не могу отправить ему уведомление автоматически.\n\n"
+                f"📎 Пожалуйста, отправьте ему эту ссылку самостоятельно:\n{deal_link}"
+            )
+            logger.warning(f"Продавец {target_username} не найден в базе, ссылка отправлена покупателю.")
+
+    except Exception as e:
+        logger.error(f"Ошибка при отправке уведомления продавцу {target_username}: {e}")
+        # Запасной вариант - отправляем ссылку покупателю
+        await bot.send_message(
             callback.from_user.id,
-            f"⚠️ Продавец @{target_username} ещё не запускал бота, поэтому я не могу отправить ему уведомление автоматически.\n\n"
+            f"⚠️ Произошла техническая ошибка при уведомлении продавца.\n\n"
             f"📎 Пожалуйста, отправьте ему эту ссылку самостоятельно:\n{deal_link}"
         )
-        logger.warning(f"Продавец {target_username} не найден в базе, ссылка отправлена покупателю.")
 
-except Exception as e:
-    logger.error(f"Ошибка при отправке уведомления продавцу {target_username}: {e}")
-    # Запасной вариант - отправляем ссылку покупателю
-    await bot.send_message(  # <-- 8 пробелов
-        callback.from_user.id,
-        f"⚠️ Произошла техническая ошибка при уведомлении продавца.\n\n"
-        f"📎 Пожалуйста, отправьте ему эту ссылку самостоятельно:\n{deal_link}"
+    # Сообщение покупателю о создании сделки
+    await callback.message.answer(
+        f"✅ Сделка создана. Статус сделки можно отслеживать в разделе «Мои сделки»."
     )
-
-# Сообщение покупателю о создании сделки
-await callback.message.answer(  # <-- 4 пробела
-    f"✅ Сделка создана. Статус сделки можно отслеживать в разделе «Мои сделки»."
-)
-await state.clear()  # <-- 4 пробела
-# === КОНЕЦ БЛОКА УВЕДОМЛЕНИЙ ===
+    await state.clear()
+    # === КОНЕЦ БЛОКА УВЕДОМЛЕНИЙ ===
     
 # Принятие сделки продавцом
 @dp.callback_query(F.data.startswith("accept_deal_"))
