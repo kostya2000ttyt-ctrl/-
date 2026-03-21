@@ -24,7 +24,7 @@ dp = Dispatcher()
 
 # Конфигурация платежей
 PROVIDER_TOKEN = "YOUR_PROVIDER_TOKEN"  # Токен Telegram Stars
-CRYPTO_PAY_TOKEN = "462970:AAC4owYb7jgRvU5heLKzcKPUZNGQIY4u1ou"  # Токен Crypto Pay (получить у @CryptoBot)
+CRYPTO_PAY_TOKEN = "553868:AAGdZCCm6UeVg07w7odQ69SAZu5N1Jf7QxQ"  # Токен Crypto Pay (получить у @CryptoBot)
 CRYPTO_PAY_API = "https://pay.crypt.bot/api/"
 
 # Комиссии
